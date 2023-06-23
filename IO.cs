@@ -8,7 +8,7 @@ namespace TgMediaSizeGroup
 {
     internal class IO
     {
-        public static System.Timers.Timer consoleUpdater = new System.Timers.Timer(1000);
+        public static System.Timers.Timer consoleUpdater = new System.Timers.Timer(3000);
         public static void ConsoleBeginUpdate()
         {
             consoleUpdater.AutoReset = true;

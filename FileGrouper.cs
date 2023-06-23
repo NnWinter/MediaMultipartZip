@@ -85,9 +85,9 @@ namespace TgMediaSizeGroup
             VolumeCount = DivideLongCeil(Length, FileGrouper.GROUP_SIZE);
             GroupId = id;
         }
-        public void Compress(DirectoryInfo outdir, int totalZips, DirectoryInfo indir)
+        public void Compress(DirectoryInfo outdir, int totalZips, DirectoryInfo indir, string customName)
         {
-            var filename = GroupId.ToString().PadLeft(GetDp(totalZips), '0') + (VolumeCount > 1 ? ("x" + VolumeCount) : "") + ".zip";
+            var filename = customName + "." + GroupId.ToString().PadLeft(GetDp(totalZips), '0') + (VolumeCount > 1 ? ("x" + VolumeCount) : "") + ".zip";
             try
             {
                 var path = Path.Combine(outdir.FullName, filename);
