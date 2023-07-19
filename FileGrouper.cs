@@ -62,7 +62,10 @@ namespace TgMediaSizeGroup
                 {
                     zip.Add(new XElement("File",
                         new XAttribute("FileName", file.FullName),
-                        new XAttribute("FileSize", file.Length)
+                        new XAttribute("FileSize", file.Length),
+                        new XAttribute("Write", file.LastWriteTime),
+                        new XAttribute("Creation", file.CreationTime),
+                        new XAttribute("Access", file.LastAccessTime)
                         ));
                 }
                 root.Add(zip);
