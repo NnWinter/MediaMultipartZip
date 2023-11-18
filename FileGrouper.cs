@@ -1,16 +1,29 @@
 ﻿using Ionic.Zip;
 using System.Text;
 using System.Xml.Linq;
+using static TgMediaSizeGroup.Program;
 
 namespace TgMediaSizeGroup
 {
     internal class FileGrouper
     {
         public static readonly long GROUP_SIZE = 3932160000L;
-        public static List<FileGroup> GetFileGroups(FileInfo[] files)
+        public static List<FileGroup> GetFileGroups(FileInfo[] files, EPackStyle packStyle)
         {
-            // 降序排列的 文件名-尺寸 对照表
-            var sort = files.OrderByDescending(x => x.Length).ToList();
+            // 根据打包方式获取文件列表
+            List<FileInfo> GetFileInfo(FileInfo[] x, EPackStyle y)
+            {
+                switch (y)
+                {
+                    // 文件尺寸是从大到小
+                    case EPackStyle.ByFileSize: return x.OrderByDescending(n => n.Length).ToList();
+                    // 文件名是从小到大
+                    case EPackStyle.ByFileName: return x.OrderBy(n => n.Name).ToList();
+                    // 无效的排序方式应该抛出异常
+                    default: throw new Exception($"错误: 无效的排序方式 - {y}");
+                }
+            }
+            var sort = GetFileInfo(files, packStyle);
 
             // 开始分组
             var groups = new List<FileGroup>();
