@@ -4,6 +4,13 @@
     {
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("未找到拖入的文件夹路径，手动输入文件夹路径：");
+                string str = Console.ReadLine();
+                args = new string[] { str };
+            }
+
             Console.WriteLine("输入文件名");
             var customName = Console.ReadLine();
             customName ??= "";
@@ -17,8 +24,11 @@
             IO.ConsoleBeginUpdate();
 
             var xml = FileGrouper.GroupsToXml(groups);
-            var xmlpath = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss") + "_" + customName + ".xml";
+            var xmlpath = customName + ".xml";
             xml.Save(xmlpath);
+            var json = FileGrouper.GroupsToJson(groups);
+            var jsonpath = customName + ".json";
+            File.WriteAllText(jsonpath, json);
 
             foreach (var group in groups) {
                 group.Compress(outPath, groups.Count, inPath, customName);
