@@ -1,0 +1,38 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!csharp
+
+using System.IO;
+using System.Diagnostics;
+using Microsoft.DotNet.Interactive;
+using System.Drawing;
+
+#!csharp
+
+var dir = new DirectoryInfo(Task.Run(async() => await Kernel.GetInputAsync("视频所在目录")).Result.Replace("\"", ""));
+dir.FullName.Display();
+var outdir = Directory.CreateDirectory(Path.Combine(dir.Parent.FullName,$"{dir.Name}_thumb"));
+
+#!csharp
+
+foreach(var file in dir.GetFiles())
+{
+    try{
+    var outpath = Path.Combine(outdir.FullName, file.Name + ".thumb.jpg");
+    if(File.Exists(outpath))
+    {   
+        if((new FileInfo(outpath).Length)>0){
+            continue;
+        }
+    }
+    var image = Image.FromFile(file.FullName);
+    image
+        .GetThumbnailImage(200, 200, () => false, IntPtr.Zero)
+        .Save(outpath);
+    image.Dispose();
+    }catch{
+        Console.WriteLine($"文件 {file.Name} 转换失败");
+    }
+}
