@@ -6,13 +6,12 @@ using System.Text;
 using System.Xml.Linq;
 using static TgMediaSizeGroup.Program;
 using MetadataExtractor;
-using Newtonsoft.Json.Linq;
 
 namespace TgMediaSizeGroup
 {
     internal class FileGrouper
     {
-        public static readonly long GROUP_SIZE = 3932160000L;
+        public static long GROUP_SIZE = 3932160000L;
         public static List<FileGroup> GetFileGroups(FileInfo[] files, EPackStyle packStyle)
         {
             List<FileInfo> sorted = GetFileInfo(files, packStyle);
@@ -27,6 +26,8 @@ namespace TgMediaSizeGroup
                     case EPackStyle.ByFileSize: return x.OrderByDescending(n => n.Length).ToList();
                     // 文件名是从小到大
                     case EPackStyle.ByFileName: return x.OrderBy(n => n.Name).ToList();
+                    // 文件修改日期从小到大
+                    case EPackStyle.ByModify: return x.OrderBy(n => n.LastWriteTime).ToList();
                     // 无效的排序方式应该抛出异常
                     default: throw new Exception($"错误: 无效的排序方式 - {y}");
                 }
@@ -103,6 +104,10 @@ namespace TgMediaSizeGroup
         {
             var groups_array = groups.Select(group => new FileGroups(group)).ToArray();
             return JsonConvert.SerializeObject(groups_array);
+        }
+        public static void SetGroupSize(long bytes)
+        {
+            GROUP_SIZE = bytes;
         }
     }
     [Obsolete]
