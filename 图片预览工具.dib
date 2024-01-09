@@ -17,7 +17,8 @@ var outdir = Directory.CreateDirectory(Path.Combine(dir.Parent.FullName,$"{dir.N
 
 #!csharp
 
-foreach(var file in dir.GetFiles())
+var files = outdir.GetFileSystemInfos("*", SearchOption.AllDirectories);
+foreach(var file in files)
 {
     try{
     var outpath = Path.Combine(outdir.FullName, file.Name + ".thumb.jpg");
