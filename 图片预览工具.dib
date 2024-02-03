@@ -8,31 +8,57 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.DotNet.Interactive;
 using System.Drawing;
+using System.Threading;
 
-#!csharp
-
-var dir = new DirectoryInfo(Task.Run(async() => await Kernel.GetInputAsync("视频所在目录")).Result.Replace("\"", ""));
+var dir = new DirectoryInfo(Task.Run(async() => await Kernel.GetInputAsync("图片所在目录")).Result.Replace("\"", ""));
 dir.FullName.Display();
 var outdir = Directory.CreateDirectory(Path.Combine(dir.Parent.FullName,$"{dir.Name}_thumb"));
 
 #!csharp
 
-var files = outdir.GetFileSystemInfos("*", SearchOption.AllDirectories);
+var files = dir.GetFileSystemInfos("*", SearchOption.AllDirectories);
+files.Count().Display();
+
+var imgSize = (width:200, height:200);
+var imgSizeMax = (width:400, height:400);
+var scale = 1/4f;
+
+FileInfo? prev = null;
 foreach(var file in files)
 {
     try{
-    var outpath = Path.Combine(outdir.FullName, file.Name + ".thumb.jpg");
-    if(File.Exists(outpath))
-    {   
-        if((new FileInfo(outpath).Length)>0){
-            continue;
+        var outpath = Path.Combine(outdir.FullName, file.Name + ".thumb.jpg");
+        if(File.Exists(outpath))
+        {   
+            if((new FileInfo(outpath).Length)>0){
+                Console.WriteLine($"跳过 {outpath}");
+                continue;
+            }
         }
-    }
-    var image = Image.FromFile(file.FullName);
-    image
-        .GetThumbnailImage(200, 200, () => false, IntPtr.Zero)
-        .Save(outpath);
-    image.Dispose();
+        var image = Image.FromFile(file.FullName);
+        var s_size = (width:image.Width * scale, height: image.Height * scale);
+        var radio = (float)image.Width / image.Height;
+
+        (int width, int height) GetOutSize(){
+            if(image.Width <= imgSize.width && image.Height <= imgSize.height){
+                return (image.Width, image.Height);
+            }
+            if(radio>1){ // width first
+                int width = int.Min(int.Max((int)s_size.width, imgSize.width), imgSizeMax.width);
+                return (width, (int)(width / radio));
+            }
+            // height first
+            int height = int.Min(int.Max((int)s_size.height, imgSize.height), imgSizeMax.height);
+            return ((int)(height*radio),height);
+        }
+        var size = GetOutSize();
+
+        image
+        .GetThumbnailImage(size.width, size.height, () => false, IntPtr.Zero)
+        .Save(outpath, System.Drawing.Imaging.ImageFormat.Jpeg);
+        
+        image.Dispose();
+
     }catch{
         Console.WriteLine($"文件 {file.Name} 转换失败");
     }
