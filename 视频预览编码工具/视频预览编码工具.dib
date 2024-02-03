@@ -1,0 +1,53 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+using System.IO;
+using System.Diagnostics;
+using Microsoft.DotNet.Interactive;
+
+string ffmpegAbsPath = new FileInfo("ffmpeg.exe").FullName;
+
+#!csharp
+
+var dir = new DirectoryInfo(Kernel.GetInputAsync("视频所在目录").Result.Replace("\"", ""));
+var outputDir = Kernel.GetInputAsync("视频输出目录").Result.Replace("\"", "");
+FileInfo[] files = dir.GetFiles("*.mp4", SearchOption.AllDirectories)
+    .Union(dir.GetFiles("*.mkv", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.avi", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.flv", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.wmv", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.mov", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.rmvb", SearchOption.AllDirectories))
+    .Union(dir.GetFiles("*.ts", SearchOption.AllDirectories)).ToArray();
+var total = files.Length;
+$"找到了 {files.Length} 个视频文件，共 {files.Sum(x=>x.Length)/(1024*1024*1024)}GB".Display();
+
+#!csharp
+
+var count = 1;
+foreach (var file in files)
+{
+    Console.WriteLine($"正在处理第 {count} / {total} 个");
+    string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(file.FullName) + ".mp4");
+
+    // h265_硬件
+    //string ff_arguments = $"-i \"{file}\" -vf \"scale=480:320\" -r 10 -c:v hevc_nvenc -b:v 200k -ac 6 \"{outputFile}\"";
+    // h264_软件
+    string ff_arguments = $"-i \"{file}\" -vf \"scale=480:320\" -r 10 -c:v libx264 -b:v 200k -ac 6 \"{outputFile}\"";
+
+    ProcessStartInfo startInfo = new ProcessStartInfo(ffmpegAbsPath, ff_arguments)
+    {
+        UseShellExecute = true,
+        CreateNoWindow = false,
+        WindowStyle = ProcessWindowStyle.Minimized // 设置窗口为最小化
+    };
+
+    using (Process process = Process.Start(startInfo))
+    {
+        process.WaitForExit();
+    }
+    count++;
+}
