@@ -4,13 +4,13 @@
 
 #!csharp
 
+#r "nuget:MetadataExtractor"
 using System.IO;
 using System.Diagnostics;
 using Microsoft.DotNet.Interactive;
+using MetadataExtractor;
 
 string ffmpegAbsPath = new FileInfo("ffmpeg.exe").FullName;
-
-#!csharp
 
 var dir = new DirectoryInfo(Kernel.GetInputAsync("视频所在目录").Result.Replace("\"", ""));
 var outputDir = Kernel.GetInputAsync("视频输出目录").Result.Replace("\"", "");
@@ -30,13 +30,29 @@ $"找到了 {files.Length} 个视频文件，共 {files.Sum(x=>x.Length)/(1024*1
 var count = 1;
 foreach (var file in files)
 {
-    Console.WriteLine($"正在处理第 {count} / {total} 个");
+    float width = 480, height = 320;
+
+    var mediaInfo = ImageMetadataReader.ReadMetadata(file.FullName);
+    var QTVInfo = mediaInfo.FirstOrDefault(x=>x.Name=="QuickTime Track Header", null);
+    if(QTVInfo!=null){
+        var twidth = QTVInfo.Tags.FirstOrDefault(x=>x.Name == "Width", null);
+        var theight = QTVInfo.Tags.FirstOrDefault(x=>x.Name == "Height", null);
+        if(twidth!=null&&theight!=null){
+            width = float.Parse(twidth.Description);
+            height = float.Parse(theight.Description);
+        }
+    }
+    else{Console.WriteLine($"文件缺少 video meta [{file.FullName}] ");}
+    var radio = (float)width/height;
+    var outwidth = (int)(width>height?480:480*radio);
+    var outheight = (int)(width>height?480/radio:480);
+    Console.WriteLine($"正在处理第 {count} / {total} 个 [{width}*{height} -> {outwidth}*{outheight}]");
     string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(file.FullName) + ".mp4");
 
     // h265_硬件
-    //string ff_arguments = $"-i \"{file}\" -vf \"scale=480:320\" -r 10 -c:v hevc_nvenc -b:v 200k -ac 6 \"{outputFile}\"";
+    string ff_arguments = $"-i \"{file}\" -vf \"scale={outwidth}:{outheight}\" -r 10 -c:v hevc_nvenc -b:v 100k -c:a aac -b:a 32k -ac 6 \"{outputFile}\"";
     // h264_软件
-    string ff_arguments = $"-i \"{file}\" -vf \"scale=480:320\" -r 10 -c:v libx264 -b:v 200k -ac 6 \"{outputFile}\"";
+    // string ff_arguments = $"-i \"{file}\" -vf \"scale=480:320\" -r 10 -c:v libx264 -b:v 100k -ac 6 \"{outputFile}\"";
 
     ProcessStartInfo startInfo = new ProcessStartInfo(ffmpegAbsPath, ff_arguments)
     {
